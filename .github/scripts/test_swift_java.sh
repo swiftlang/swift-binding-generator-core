@@ -25,7 +25,8 @@
 
 set -euo pipefail
 
-declare -r REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+declare -r REPO_ROOT
 declare -r DOWNSTREAM_DIR="$REPO_ROOT/.downstream/swift-java"
 
 SWIFT_JAVA_REPOSITORY="${SWIFT_JAVA_REPOSITORY:-swiftlang/swift-java}"
