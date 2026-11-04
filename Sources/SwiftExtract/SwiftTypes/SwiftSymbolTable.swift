@@ -94,7 +94,7 @@ public class SwiftSymbolTable {
 }
 
 extension SwiftSymbolTable {
-  package static func setup(
+  public static func setup(
     moduleName: String,
     _ inputFiles: some Collection<SwiftInputFile>,
     additionalInputFiles: [SwiftInputFile] = [],

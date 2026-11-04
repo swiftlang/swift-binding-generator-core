@@ -18,7 +18,7 @@
 /// A filter pattern is either a file-path pattern (uses `/` or a Swift file
 /// extension) or a type-name pattern (uses `.`). Plain names with neither
 /// match both
-package enum SwiftFilterPatternKind {
+public enum SwiftFilterPatternKind {
   /// Pattern contains `/`, ends in a Swift source extension, or is a bare `**`
   /// glob — matches against relative file paths
   case filePath
@@ -29,7 +29,7 @@ package enum SwiftFilterPatternKind {
   case plain
 }
 
-package func classifyPattern(_ pattern: String) -> SwiftFilterPatternKind {
+public func classifyPattern(_ pattern: String) -> SwiftFilterPatternKind {
   // Directory separator is the strongest signal for a file path
   if pattern.contains("/") {
     return .filePath
@@ -165,7 +165,7 @@ private func matchSegment(_ segment: String, against pattern: String) -> Bool {
 ///  - `**` matches zero or more path segments
 ///  - `*` at the end of a segment matches any suffix (e.g. `Us*` matches `User.swift`)
 ///  - exact segment match otherwise
-package func matchesFilePathFilter(relativePath: String, pattern: String) -> Bool {
+public func matchesFilePathFilter(relativePath: String, pattern: String) -> Bool {
   matchesGlob(value: relativePath, pattern: pattern, separator: "/")
 }
 
@@ -179,7 +179,7 @@ package func matchesFilePathFilter(relativePath: String, pattern: String) -> Boo
 ///  - `**` matches zero or more name components
 ///  - `*` at the end of a component matches any suffix
 ///  - exact component match otherwise
-package func matchesTypeNameFilter(qualifiedName: String, pattern: String) -> Bool {
+public func matchesTypeNameFilter(qualifiedName: String, pattern: String) -> Bool {
   matchesGlob(value: qualifiedName, pattern: pattern, separator: ".")
 }
 
@@ -193,7 +193,7 @@ package func matchesTypeNameFilter(qualifiedName: String, pattern: String) -> Bo
 /// Only file-path patterns (containing `/`) and plain patterns (no `/` or `.`)
 /// are checked here. Type-name patterns are skipped — use
 /// `shouldExtractSwiftType` for those
-package func shouldExtractSwiftFile(relativePath: String, config: any SwiftExtractConfiguration) -> Bool {
+public func shouldExtractSwiftFile(relativePath: String, config: any SwiftExtractConfiguration) -> Bool {
   if let includeFilters = config.swiftFilterInclude, !includeFilters.isEmpty {
     // Must match at least one file-level include pattern.
     // If all include patterns are type-name patterns, don't filter at file level
@@ -244,7 +244,7 @@ private func matchesFilePattern(relativePath: String, pattern: String) -> Bool {
 /// Only type-name patterns (containing `.`) and plain patterns (no `/` or `.`)
 /// are checked here. File-path patterns are skipped — use `shouldExtractSwiftFile`
 /// for those
-package func shouldExtractSwiftType(qualifiedName: String, config: any SwiftExtractConfiguration) -> Bool {
+public func shouldExtractSwiftType(qualifiedName: String, config: any SwiftExtractConfiguration) -> Bool {
   if let includeFilters = config.swiftFilterInclude, !includeFilters.isEmpty {
     let typePatterns = includeFilters.filter { classifyPattern($0) != .filePath }
     if !typePatterns.isEmpty {

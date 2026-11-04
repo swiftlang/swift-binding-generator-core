@@ -15,7 +15,7 @@
 import SwiftSyntax
 
 /// Scan importing modules.
-package func importingModules(sourceFile: SourceFileSyntax) -> [ExtractedSwiftModule] {
+public func importingModules(sourceFile: SourceFileSyntax) -> [ExtractedSwiftModule] {
   var importingModuleNames: [ExtractedSwiftModule] = []
   for item in sourceFile.statements {
     if let importDecl = item.item.as(ImportDeclSyntax.self) {

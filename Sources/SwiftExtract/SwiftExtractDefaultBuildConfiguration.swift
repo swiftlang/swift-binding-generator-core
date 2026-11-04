@@ -17,12 +17,12 @@ import SwiftIfConfig
 import SwiftSyntax
 
 /// A default, fixed build configuration during static analysis for interface extraction.
-package struct SwiftExtractDefaultBuildConfiguration: BuildConfiguration {
-  package static let shared = SwiftExtractDefaultBuildConfiguration()
+public struct SwiftExtractDefaultBuildConfiguration: BuildConfiguration {
+  public static let shared = SwiftExtractDefaultBuildConfiguration()
 
   private var base: StaticBuildConfiguration
 
-  package init() {
+  public init() {
     guard let url = Bundle.module.url(forResource: "static-build-config", withExtension: "json") else {
       fatalError("static-build-config.json is not found in module bundle")
     }
@@ -35,69 +35,69 @@ package struct SwiftExtractDefaultBuildConfiguration: BuildConfiguration {
     }
   }
 
-  package func isCustomConditionSet(name: String) throws -> Bool {
+  public func isCustomConditionSet(name: String) throws -> Bool {
     base.isCustomConditionSet(name: name)
   }
 
-  package func hasFeature(name: String) throws -> Bool {
+  public func hasFeature(name: String) throws -> Bool {
     base.hasFeature(name: name)
   }
 
-  package func hasAttribute(name: String) throws -> Bool {
+  public func hasAttribute(name: String) throws -> Bool {
     base.hasAttribute(name: name)
   }
 
-  package func canImport(importPath: [(TokenSyntax, String)], version: CanImportVersion) throws -> Bool {
+  public func canImport(importPath: [(TokenSyntax, String)], version: CanImportVersion) throws -> Bool {
     try base.canImport(importPath: importPath, version: version)
   }
 
-  package func isActiveTargetOS(name: String) throws -> Bool {
+  public func isActiveTargetOS(name: String) throws -> Bool {
     true
   }
 
-  package func isActiveTargetArchitecture(name: String) throws -> Bool {
+  public func isActiveTargetArchitecture(name: String) throws -> Bool {
     true
   }
 
-  package func isActiveTargetEnvironment(name: String) throws -> Bool {
+  public func isActiveTargetEnvironment(name: String) throws -> Bool {
     true
   }
 
-  package func isActiveTargetRuntime(name: String) throws -> Bool {
+  public func isActiveTargetRuntime(name: String) throws -> Bool {
     true
   }
 
-  package func isActiveTargetPointerAuthentication(name: String) throws -> Bool {
+  public func isActiveTargetPointerAuthentication(name: String) throws -> Bool {
     true
   }
 
-  package func isActiveTargetObjectFormat(name: String) throws -> Bool {
+  public func isActiveTargetObjectFormat(name: String) throws -> Bool {
     true
   }
 
-  package var targetPointerBitWidth: Int {
+  public var targetPointerBitWidth: Int {
     base.targetPointerBitWidth
   }
 
-  package var targetAtomicBitWidths: [Int] {
+  public var targetAtomicBitWidths: [Int] {
     base.targetAtomicBitWidths
   }
 
-  package var endianness: Endianness {
+  public var endianness: Endianness {
     base.endianness
   }
 
-  package var languageVersion: VersionTuple {
+  public var languageVersion: VersionTuple {
     base.languageVersion
   }
 
-  package var compilerVersion: VersionTuple {
+  public var compilerVersion: VersionTuple {
     base.compilerVersion
   }
 }
 
 extension BuildConfiguration where Self == SwiftExtractDefaultBuildConfiguration {
-  package static var swiftExtractDefault: SwiftExtractDefaultBuildConfiguration {
+  public static var swiftExtractDefault: SwiftExtractDefaultBuildConfiguration {
     .shared
   }
 }
@@ -107,16 +107,16 @@ extension BuildConfiguration where Self == SwiftExtractDefaultBuildConfiguration
 /// behind `#if canImport(<module>)` for modules the static build configuration
 /// does not otherwise know about (e.g. another language code generator can
 /// declare its own runtime module importable for extraction).
-package struct ImportOverlayBuildConfiguration<Base: BuildConfiguration>: BuildConfiguration {
-  package var base: Base
-  package var availableImportModules: Set<String>
+public struct ImportOverlayBuildConfiguration<Base: BuildConfiguration>: BuildConfiguration {
+  public var base: Base
+  public var availableImportModules: Set<String>
 
-  package init(base: Base, availableImportModules: Set<String>) {
+  public init(base: Base, availableImportModules: Set<String>) {
     self.base = base
     self.availableImportModules = availableImportModules
   }
 
-  package func canImport(importPath: [(TokenSyntax, String)], version: CanImportVersion) throws -> Bool {
+  public func canImport(importPath: [(TokenSyntax, String)], version: CanImportVersion) throws -> Bool {
     // `importPath` is the dotted module path; the leading component is the module.
     if let moduleName = importPath.first?.1, availableImportModules.contains(moduleName) {
       return true
@@ -124,18 +124,18 @@ package struct ImportOverlayBuildConfiguration<Base: BuildConfiguration>: BuildC
     return try base.canImport(importPath: importPath, version: version)
   }
 
-  package func isCustomConditionSet(name: String) throws -> Bool { try base.isCustomConditionSet(name: name) }
-  package func hasFeature(name: String) throws -> Bool { try base.hasFeature(name: name) }
-  package func hasAttribute(name: String) throws -> Bool { try base.hasAttribute(name: name) }
-  package func isActiveTargetOS(name: String) throws -> Bool { try base.isActiveTargetOS(name: name) }
-  package func isActiveTargetArchitecture(name: String) throws -> Bool { try base.isActiveTargetArchitecture(name: name) }
-  package func isActiveTargetEnvironment(name: String) throws -> Bool { try base.isActiveTargetEnvironment(name: name) }
-  package func isActiveTargetRuntime(name: String) throws -> Bool { try base.isActiveTargetRuntime(name: name) }
-  package func isActiveTargetPointerAuthentication(name: String) throws -> Bool { try base.isActiveTargetPointerAuthentication(name: name) }
-  package func isActiveTargetObjectFormat(name: String) throws -> Bool { try base.isActiveTargetObjectFormat(name: name) }
-  package var targetPointerBitWidth: Int { base.targetPointerBitWidth }
-  package var targetAtomicBitWidths: [Int] { base.targetAtomicBitWidths }
-  package var endianness: Endianness { base.endianness }
-  package var languageVersion: VersionTuple { base.languageVersion }
-  package var compilerVersion: VersionTuple { base.compilerVersion }
+  public func isCustomConditionSet(name: String) throws -> Bool { try base.isCustomConditionSet(name: name) }
+  public func hasFeature(name: String) throws -> Bool { try base.hasFeature(name: name) }
+  public func hasAttribute(name: String) throws -> Bool { try base.hasAttribute(name: name) }
+  public func isActiveTargetOS(name: String) throws -> Bool { try base.isActiveTargetOS(name: name) }
+  public func isActiveTargetArchitecture(name: String) throws -> Bool { try base.isActiveTargetArchitecture(name: name) }
+  public func isActiveTargetEnvironment(name: String) throws -> Bool { try base.isActiveTargetEnvironment(name: name) }
+  public func isActiveTargetRuntime(name: String) throws -> Bool { try base.isActiveTargetRuntime(name: name) }
+  public func isActiveTargetPointerAuthentication(name: String) throws -> Bool { try base.isActiveTargetPointerAuthentication(name: name) }
+  public func isActiveTargetObjectFormat(name: String) throws -> Bool { try base.isActiveTargetObjectFormat(name: name) }
+  public var targetPointerBitWidth: Int { base.targetPointerBitWidth }
+  public var targetAtomicBitWidths: [Int] { base.targetAtomicBitWidths }
+  public var endianness: Endianness { base.endianness }
+  public var languageVersion: VersionTuple { base.languageVersion }
+  public var compilerVersion: VersionTuple { base.compilerVersion }
 }

@@ -15,7 +15,7 @@
 extension SwiftType {
   /// Returns a concrete type if this is a generic parameter in the list and it
   /// conforms to a protocol with representative concrete type.
-  package func representativeConcreteTypeIn(
+  public func representativeConcreteTypeIn(
     knownTypes: SwiftKnownTypes,
     genericParameters: [SwiftGenericParameterDeclaration],
     genericRequirements: [SwiftGenericRequirement]
@@ -29,7 +29,7 @@ extension SwiftType {
   }
 
   /// Returns the protocol type if this is a generic parameter in the list
-  package func typeIn(
+  public func typeIn(
     genericParameters: [SwiftGenericParameterDeclaration],
     genericRequirements: [SwiftGenericRequirement]
   ) -> SwiftType? {

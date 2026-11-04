@@ -22,63 +22,63 @@ import SwiftSyntax
 public final class SwiftAnalyzer {
   static let SWIFT_INTERFACE_SUFFIX = ".swiftinterface"
 
-  package var log: Logger
+  public var log: Logger
 
-  package let config: any SwiftExtractConfiguration
+  public let config: any SwiftExtractConfiguration
 
   /// The build configuration used to resolve #if conditional compilation blocks.
-  package let buildConfig: any BuildConfiguration
+  public let buildConfig: any BuildConfiguration
 
   /// The name of the Swift module being translated.
-  package let swiftModuleName: String
+  public let swiftModuleName: String
 
   // ==== Input
 
-  package var inputs: [SwiftInputFile] = []
+  public var inputs: [SwiftInputFile] = []
 
   /// File paths that were skipped by swift filters but still need empty output
   /// files written (when --write-empty-files is set) so SwiftPM doesn't
   /// complain about missing declared outputs
-  package var filteredOutPaths: [String] = []
+  public var filteredOutPaths: [String] = []
 
   /// Sources jextract needs for symbol resolution but does not generate bindings
   /// for: wrapped Java classes plus real Swift sources from dependency modules.
   /// Populated by `SwiftToJava.run` before `analyze()` runs.
-  package var sourceDependencies = SourceDependencies()
+  public var sourceDependencies = SourceDependencies()
 
   // ==== Output state
 
-  package var extractedGlobalVariables: [ExtractedFunc] = []
+  public var extractedGlobalVariables: [ExtractedFunc] = []
 
-  package var extractedGlobalFuncs: [ExtractedFunc] = []
+  public var extractedGlobalFuncs: [ExtractedFunc] = []
 
   /// A mapping from Swift type names (e.g., A.B) over to the extracted nominal
   /// type representation.
-  package var extractedTypes: [SwiftTypeName: ExtractedNominalType] = [:]
+  public var extractedTypes: [SwiftTypeName: ExtractedNominalType] = [:]
 
   /// Extensions these sources declare on nominal types owned by other modules.
   ///
   /// Kept apart from `extractedTypes` on purpose: recording another module's type here says
   /// what the analysis learned about it, never that a generator should emit it
-  package var crossModuleExtensions: CrossModuleExtensions = CrossModuleExtensions()
+  public var crossModuleExtensions: CrossModuleExtensions = CrossModuleExtensions()
 
   /// Specializations of generic types that will get their concrete Java declarations, "as if" they were independent types
-  package var specializations: [ExtractedNominalType: Set<ExtractedNominalType>] = [:]
+  public var specializations: [ExtractedNominalType: Set<ExtractedNominalType>] = [:]
 
-  package var lookupContext: SwiftTypeLookupContext! = nil
+  public var lookupContext: SwiftTypeLookupContext! = nil
 
-  package var symbolTable: SwiftSymbolTable! {
+  public var symbolTable: SwiftSymbolTable! {
     lookupContext?.symbolTable
   }
 
   /// Language-specific per-decl extraction policy. Every language target
   /// must supply one — pass `DefaultAccessLevelExtractDecider` for the
   /// access-level-only baseline.
-  package let extractDecider: any ExtractDecider
+  public let extractDecider: any ExtractDecider
 
   /// Receives an event for every declaration the analyzer skips; `nil`
   /// keeps the default log-and-drop behavior only.
-  package let diagnosticsSink: (any SwiftExtractDiagnosticsSink)?
+  public let diagnosticsSink: (any SwiftExtractDiagnosticsSink)?
 
   public init(
     config: any SwiftExtractConfiguration,
@@ -143,7 +143,7 @@ extension SwiftAnalyzer {
   }
 
   /// Convenient method for analyzing single file.
-  package func analyze(path: String, text: String) throws {
+  public func analyze(path: String, text: String) throws {
     self.add(filePath: path, text: text)
     try self.analyze()
   }
@@ -310,7 +310,7 @@ extension SwiftAnalyzer {
     return try SwiftType(syntax, lookupContext: lookupContext)
   }
 
-  package func prepareForTranslation() {
+  public func prepareForTranslation() {
     let symbolTable = SwiftSymbolTable.setup(
       moduleName: self.swiftModuleName,
       inputs,

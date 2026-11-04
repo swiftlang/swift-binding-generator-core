@@ -15,30 +15,30 @@
 import SwiftIfConfig
 import SwiftSyntax
 
-package struct SwiftParsedModuleSymbolTableBuilder {
-  package let log: Logger?
+public struct SwiftParsedModuleSymbolTableBuilder {
+  public let log: Logger?
 
   /// The symbol table being built.
-  package var symbolTable: SwiftModuleSymbolTable
+  public var symbolTable: SwiftModuleSymbolTable
 
   /// Imported modules to resolve type syntax.
-  package let importedModules: [String: SwiftModuleSymbolTable]
+  public let importedModules: [String: SwiftModuleSymbolTable]
 
   /// The build configuration used to resolve #if conditional compilation blocks.
-  package let buildConfig: any BuildConfiguration
+  public let buildConfig: any BuildConfiguration
 
   /// An extension decl whose extended type hasn't been resolved yet, paired with
   /// the path of the source file it was declared in.
-  package struct UnresolvedExtension {
-    package var node: ExtensionDeclSyntax
-    package var sourceFilePath: String
+  public struct UnresolvedExtension {
+    public var node: ExtensionDeclSyntax
+    public var sourceFilePath: String
   }
 
   /// Extension decls their extended type hasn't been resolved, paired with
   /// the path of the source file they were declared in.
-  package var unresolvedExtensions: [UnresolvedExtension]
+  public var unresolvedExtensions: [UnresolvedExtension]
 
-  package init(
+  public init(
     moduleName: String,
     requiredAvailablityOfModuleWithName: String? = nil,
     alternativeModules: SwiftModuleSymbolTable.AlternativeModuleNamesData? = nil,
@@ -57,14 +57,14 @@ package struct SwiftParsedModuleSymbolTableBuilder {
     self.unresolvedExtensions = []
   }
 
-  package var moduleName: String {
+  public var moduleName: String {
     symbolTable.moduleName
   }
 }
 
 extension SwiftParsedModuleSymbolTableBuilder {
 
-  package mutating func handle(
+  public mutating func handle(
     sourceFile: SourceFileSyntax,
     sourceFilePath: String
   ) {
@@ -74,7 +74,7 @@ extension SwiftParsedModuleSymbolTableBuilder {
     }
   }
 
-  package mutating func handle(
+  public mutating func handle(
     codeBlockItem node: CodeBlockItemSyntax.Item,
     sourceFilePath: String
   ) {
@@ -96,7 +96,7 @@ extension SwiftParsedModuleSymbolTableBuilder {
     }
   }
 
-  package mutating func handle(
+  public mutating func handle(
     typeAliasDecl node: TypeAliasDeclSyntax,
     sourceFilePath: String
   ) {
@@ -116,7 +116,7 @@ extension SwiftParsedModuleSymbolTableBuilder {
 
   /// Add a nominal type declaration and all of the nested types within it to the symbol
   /// table.
-  package mutating func handle(
+  public mutating func handle(
     sourceFilePath: String,
     nominalTypeDecl node: NominalTypeDeclSyntaxNode,
     parent: SwiftNominalTypeDeclaration?
@@ -150,7 +150,7 @@ extension SwiftParsedModuleSymbolTableBuilder {
     self.handle(sourceFilePath: sourceFilePath, memberBlock: node.memberBlock, parent: nominalTypeDecl)
   }
 
-  package mutating func handle(
+  public mutating func handle(
     sourceFilePath: String,
     typeAliasDecl node: TypeAliasDeclSyntax,
     parent: SwiftNominalTypeDeclaration?
@@ -175,7 +175,7 @@ extension SwiftParsedModuleSymbolTableBuilder {
     }
   }
 
-  package mutating func handle(
+  public mutating func handle(
     sourceFilePath: String,
     memberBlock node: MemberBlockSyntax,
     parent: SwiftNominalTypeDeclaration
@@ -186,7 +186,7 @@ extension SwiftParsedModuleSymbolTableBuilder {
   }
 
   /// Add a nested type declaration to the symbol table.
-  package mutating func handle(
+  public mutating func handle(
     sourceFilePath: String,
     memberDecl decl: DeclSyntax,
     parent: SwiftNominalTypeDeclaration
@@ -216,7 +216,7 @@ extension SwiftParsedModuleSymbolTableBuilder {
     }
   }
 
-  package mutating func handle(
+  public mutating func handle(
     extensionDecl node: ExtensionDeclSyntax,
     sourceFilePath: String
   ) {
@@ -227,7 +227,7 @@ extension SwiftParsedModuleSymbolTableBuilder {
 
   /// Add any nested types within the given extension to the symbol table.
   /// If the extended nominal type can't be resolved, returns false.
-  package mutating func tryHandle(
+  public mutating func tryHandle(
     extension node: ExtensionDeclSyntax,
     sourceFilePath: String
   ) -> Bool {
@@ -251,7 +251,7 @@ extension SwiftParsedModuleSymbolTableBuilder {
     return true
   }
 
-  package mutating func handle(
+  public mutating func handle(
     ifConfig node: IfConfigDeclSyntax,
     sourceFilePath: String
   ) {
@@ -269,7 +269,7 @@ extension SwiftParsedModuleSymbolTableBuilder {
   }
 
   /// Finalize the symbol table and return it.
-  package mutating func finalize() -> SwiftModuleSymbolTable {
+  public mutating func finalize() -> SwiftModuleSymbolTable {
     // Handle the unresolved extensions.
     // The work queue is required because, the extending type might be declared
     // in another extension that hasn't been processed. E.g.:
@@ -298,7 +298,7 @@ extension SwiftParsedModuleSymbolTableBuilder {
 }
 
 extension DeclSyntaxProtocol {
-  package var asNominal: NominalTypeDeclSyntaxNode? {
+  public var asNominal: NominalTypeDeclSyntaxNode? {
     switch DeclSyntax(self).as(DeclSyntaxEnum.self) {
     case .actorDecl(let actorDecl): actorDecl
     case .classDecl(let classDecl): classDecl
