@@ -1,15 +1,25 @@
 # swift-binding-generator-core
 
-Language-neutral core libraries for building Swift binding generators: tools that analyze Swift sources and generate bindings for calling Swift from other languages.
+Shared, reusable, target-language agnostic core libraries useful for building Swift language interop binding generators, such as [swift-java](https://github.com/swiftlang/swift-java) and [JavaScriptKit](https://github.com/swiftwasm/JavaScriptKit) and more.
 
-This package was split out of [swift-java](https://github.com/swiftlang/swift-java), where the `SwiftExtract` library powers the `jextract-swift` tool. It is consumed by swift-java and other language binding generators (e.g. swift-python) that need to analyze Swift sources in order to generate foreign language bindings calling into the analyzed Swift code.
+One example how these libraries are used is the `jextract` tool from [swift-java](https://github.com/swiftlang/swift-java). The `SwiftExtract` library offered by this package is used to analyze Swift input sources, and the swift-java library acts on the results of this analysis. The javascript interoperability tools work the same way, and you could build tools targeting other languages natively as well.
 
 ## Products
 
 - `SwiftExtract`: analyzes Swift source files and extracts the declarations (types, functions, global variables) that should be exposed to another language, along with a symbol table and type lookup facilities. Built on [swift-syntax](https://github.com/swiftlang/swift-syntax).
 - `SwiftExtractConfigurationShared`: small shared configuration enums (`AccessLevelMode`, `LogLevel`) used by binding generator plugins and tools.
 
-## Depending on this package
+## Source Compatibility
+
+This package does not offer strict source stable API, however we make effort to either not break, or update consumers of the library when changes are made here.
+This is verified with CI checking downstream consumers: swift-java, JavaScriptKit etc. This approach is beneficial to quick iteration and supporting a limited
+set of official language interop libraries and tools, without locking down the API.
+
+If you are maintaining another language target, please reach out and we'll work out a way to collaborate.
+
+In the future we may consider a stricter source compatibility guarantee.
+
+## Dependency
 
 Add the dependency to your `Package.swift`:
 
@@ -31,10 +41,3 @@ Downstream packages (such as swift-java) support overriding this dependency with
 SWIFT_BINDING_GENERATOR_CORE_PATH=~/code/swift-binding-generator-core swift build
 ```
 
-## Development
-
-This repository is developed alongside [swift-java](https://github.com/swiftlang/swift-java), its primary consumer. A non-blocking CI job builds and tests the latest swift-java against every pull request to catch source breaks early; it can also be triggered manually with `workflow_dispatch` against a specific swift-java branch.
-
-## License
-
-Copyright (c) 2024-2026 Apple Inc. and the Swift project authors. Licensed under Apache License v2.0 with Runtime Library Exception. See [LICENSE.txt](LICENSE.txt) for more information.
