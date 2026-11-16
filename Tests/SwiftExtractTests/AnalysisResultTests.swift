@@ -366,6 +366,42 @@ struct AnalysisResultSuite {
     #expect(kinds["*"] == .binaryOperator)
   }
 
+  @Test func fileScopeOperators() throws {
+    let result = try analyze(
+      sources: [
+        (
+          "/fake/Source.swift",
+          """
+          postfix operator ++
+
+          public struct Score {
+              public var value: Int
+          }
+
+          public func * (left: Int, right: Score) -> Score {
+            Score(value: left * right.value)
+          }
+
+          public prefix func - (value: Score) -> Score {
+            Score(value: -value.value)
+          }
+
+          public postfix func ++ (value: Score) -> Score {
+            Score(value: value.value + 1)
+          }
+          """
+        )
+      ],
+      moduleName: "Aquarium",
+    )
+
+    let kinds = Dictionary(uniqueKeysWithValues: result.extractedGlobalFuncs.map { ($0.name, $0.apiKind) })
+
+    #expect(kinds["*"] == .binaryOperator)
+    #expect(kinds["-"] == .prefixOperator)
+    #expect(kinds["++"] == .postfixOperator)
+  }
+
   // ==== -----------------------------------------------------------------------
   // MARK: Effect specifiers (throws / async)
 

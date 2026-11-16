@@ -366,12 +366,7 @@ final class SwiftAnalysisVisitor {
       return
     }
 
-    let apiKind: SwiftAPIKind =
-      if typeContext != nil && Self.operatorKind(node) != nil {
-        Self.operatorKind(node)!
-      } else {
-        .function
-      }
+    let apiKind: SwiftAPIKind = Self.operatorKind(node) ?? .function
 
     let extracted = ExtractedFunc(
       module: analyzer.swiftModuleName,
