@@ -57,7 +57,7 @@ jobs:
 
   test-swift-macos:
     name: Test (Swift) (${{ matrix.os_version }} swift:${{ matrix.swift_version }})
-    runs-on: [self-hosted, macos, tahoe, ARM64]
+    runs-on: [self-hosted, macos, goldengate, ARM64]
     strategy:
       fail-fast: false
       matrix:
