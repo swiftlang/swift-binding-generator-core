@@ -317,6 +317,55 @@ struct AnalysisResultSuite {
     #expect(coalescingNilOperator.apiKind == .binaryOperator)
   }
 
+  @Test func prefixAndPostfixOperators() throws {
+    let result = try analyze(
+      sources: [
+        (
+          "/fake/Source.swift",
+          """
+          postfix operator ++
+          postfix operator --
+
+          public struct Score {
+              public var value: Int
+
+              public static prefix func - (value: Score) -> Score {
+                Score(value: -value.value)
+              }
+
+              public static prefix func ~(value: Score) -> Score {
+                Score(value: ~value.value)
+              }
+
+              public static postfix func ++ (value: Score) -> Score {
+                Score(value: value.value + 1)
+              }
+
+              public static postfix func --(value: Score) -> Score {
+                Score(value: value.value - 1)
+              }
+
+              public static func *(left: Score, right: Score) -> Score {
+                Score(value: left.value * right.value)
+              }
+          }
+          """
+        )
+      ],
+      moduleName: "Aquarium",
+    )
+
+    let score = try #require(result.extractedTypes["Score"])
+    let kinds = Dictionary(uniqueKeysWithValues: score.methods.map { ($0.name, $0.apiKind) })
+
+    // Whether or not the operator name is followed by whitespace, the modifier decides the kind.
+    #expect(kinds["-"] == .prefixOperator)
+    #expect(kinds["~"] == .prefixOperator)
+    #expect(kinds["++"] == .postfixOperator)
+    #expect(kinds["--"] == .postfixOperator)
+    #expect(kinds["*"] == .binaryOperator)
+  }
+
   // ==== -----------------------------------------------------------------------
   // MARK: Effect specifiers (throws / async)
 
