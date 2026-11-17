@@ -49,6 +49,17 @@ extension DeclModifierSyntax {
 }
 
 extension DeclModifierSyntax {
+  /// Whether this modifier is an access level keyword like `public` or `private`
+  var isAccessLevelModifier: Bool {
+    switch self.name.tokenKind {
+    case .keyword(.private), .keyword(.fileprivate), .keyword(.internal),
+      .keyword(.package), .keyword(.public), .keyword(.open):
+      true
+    default:
+      false
+    }
+  }
+
   var isPublic: Bool {
     switch self.name.tokenKind {
     case .keyword(.private): false

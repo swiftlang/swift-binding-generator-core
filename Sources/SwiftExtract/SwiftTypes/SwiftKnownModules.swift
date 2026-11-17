@@ -44,6 +44,8 @@ public enum SwiftKnownModule: String {
 extension SwiftKnownModule {
   /// Whether `node` is part of the source SwiftExtract uses to describe this module, such as
   /// the `Foundation.URL` it extracts when a module uses `URL`.
+  ///
+  /// `foundation` and `foundationEssentials` are described by the same source, so they contain the same nodes.
   public func contains(_ node: some SyntaxProtocol) -> Bool {
     node.root.id == sourceFile.id
   }

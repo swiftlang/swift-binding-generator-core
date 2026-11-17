@@ -39,32 +39,35 @@ public protocol ExtractDecider {
     in parent: ExtractedNominalType?
   ) -> Bool
 
-  /// Decide whether `decl`, a member of an extension whose extended type doesn't resolve, should be
-  /// extracted. An extension with members, none of which should be extracted, is ignored instead of
-  /// being reported as skipped.
-  ///
-  /// - Parameters:
-  ///   - decl: the member being considered
-  ///   - extensionDecl: the extension containing `decl`
-  func shouldExtract(
-    decl: DeclSyntax,
-    in extensionDecl: ExtensionDeclSyntax
-  ) -> Bool
+  /// Decide whether the passed in extension, including its members and any conformances it adds,
+  /// should be extracted.
+  func shouldExtract(extension extensionDecl: ExtensionDeclSyntax) -> Bool
 
-  /// Whether `type`, from this module or a dependency, is extracted. A declaration whose signature uses a
-  /// type that isn't extracted is skipped, since the generated code would refer to a type that doesn't exist.
-  func isExtracted(_ type: SwiftNominalTypeDeclaration) -> Bool
+  /// Decide whether `decl`, a member of an extension whose extended type did not resolve, should be extracted.
+  ///
+  /// Asked for each member of an extension that `shouldExtract(extension:)` accepted. There is no
+  /// `ExtractedNominalType` to pass as a parent, which is why `shouldExtract(decl:in:)` can't be used.
+  /// Members of an extension whose extended type resolves are decided with `shouldExtract(decl:in:)`.
+  func shouldExtract(decl: DeclSyntax, in extension: ExtensionDeclSyntax) -> Bool
+
+  /// Decide whether declarations whose signature uses `type` should be extracted.
+  ///
+  /// `type` can come from this module, a dependency, or a known module such as Foundation. Return
+  /// `false` when the generated code couldn't refer to `type`; the declarations using it are then
+  /// skipped instead of producing code that refers to a type that doesn't exist.
+  func shouldExtract(declarationUsing type: SwiftNominalTypeDeclaration) -> Bool
 }
 
 extension ExtractDecider {
-  public func shouldExtract(
-    decl: DeclSyntax,
-    in extensionDecl: ExtensionDeclSyntax
-  ) -> Bool {
+  public func shouldExtract(extension extensionDecl: ExtensionDeclSyntax) -> Bool {
     true
   }
 
-  public func isExtracted(_ type: SwiftNominalTypeDeclaration) -> Bool {
+  public func shouldExtract(decl: DeclSyntax, in extension: ExtensionDeclSyntax) -> Bool {
+    true
+  }
+
+  public func shouldExtract(declarationUsing type: SwiftNominalTypeDeclaration) -> Bool {
     true
   }
 }
@@ -90,6 +93,25 @@ public struct DefaultAccessLevelExtractDecider: ExtractDecider {
     let ok = mod.isAtLeast(accessLevel, in: parent)
     if !ok {
       log.trace("Skip '\(decl.qualifiedNameForDebug)': not at least \(accessLevel)")
+    }
+    return ok
+  }
+
+  /// A member of an unresolved extension inherits the access level of the extension unless it
+  /// declares its own. Declarations without modifiers, like `#if` blocks and macro expansions, are
+  /// kept since there is nothing to decide on.
+  public func shouldExtract(
+    decl: DeclSyntax,
+    in extension: ExtensionDeclSyntax
+  ) -> Bool {
+    guard let member = decl.asProtocol((any WithModifiersSyntax).self) else {
+      return true
+    }
+    let hasOwnAccessLevel = member.modifiers.contains { $0.isAccessLevelModifier }
+    let decider: any WithModifiersSyntax = hasOwnAccessLevel ? member : `extension`
+    let ok = decider.isAtLeast(accessLevel, in: nil as ExtractedNominalType?)
+    if !ok {
+      log.trace("Skip '\(decl.qualifiedNameForDebug)' in extension: not at least \(accessLevel)")
     }
     return ok
   }
