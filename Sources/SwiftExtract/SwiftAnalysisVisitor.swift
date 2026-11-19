@@ -148,6 +148,14 @@ final class SwiftAnalysisVisitor {
       return
 
     case .unresolved:
+      let members = node.memberBlock.members
+      guard
+        members.isEmpty
+          || members.contains(where: { analyzer.extractDecider.shouldExtract(decl: $0.decl, in: node) })
+      else {
+        log.trace("Skip 'extension \(node.extendedType.trimmedDescription)': no member should be extracted")
+        return
+      }
       self.reportSkipped(
         node,
         name: "extension \(node.extendedType.trimmedDescription)",
@@ -356,6 +364,7 @@ final class SwiftAnalysisVisitor {
         enclosingType: typeContext?.swiftType,
         lookupContext: analyzer.lookupContext,
       )
+      try checkRequiredTypesAreExtracted(signature)
     } catch {
       self.reportSkipped(
         node,
@@ -408,6 +417,7 @@ final class SwiftAnalysisVisitor {
           enclosingType: typeContext.swiftType,
           lookupContext: analyzer.lookupContext,
         )
+        try checkRequiredTypesAreExtracted(signature)
 
         let caseName = caseElement.name.text.unescapedSwiftName
         let caseFunction = ExtractedFunc(
@@ -511,6 +521,7 @@ final class SwiftAnalysisVisitor {
         enclosingType: typeContext.swiftType,
         lookupContext: analyzer.lookupContext,
       )
+      try checkRequiredTypesAreExtracted(signature)
     } catch {
       self.reportSkipped(
         node,
@@ -629,6 +640,7 @@ final class SwiftAnalysisVisitor {
       log.warning("Not supported declaration type \(node.kind) while calling importAccessor!")
       return
     }
+    try checkRequiredTypesAreExtracted(signature)
 
     let extracted = ExtractedFunc(
       module: analyzer.swiftModuleName,
@@ -888,6 +900,51 @@ final class SwiftAnalysisVisitor {
       return message
     }
     return "\(message). \(hint)"
+  }
+
+  /// A declaration uses a type that isn't extracted, so the generated code would refer to a type that doesn't exist
+  struct UnextractedTypeError: Error, CustomStringConvertible {
+    let typeName: String
+
+    var description: String {
+      "uses '\(typeName)', which is not extracted"
+    }
+  }
+
+  /// Throws `UnextractedTypeError` if a parameter or the result of `signature` uses a type that isn't extracted
+  func checkRequiredTypesAreExtracted(_ signature: SwiftFunctionSignature) throws {
+    func check(_ type: SwiftType) throws {
+      switch type {
+      case .nominal(let nominal):
+        for argument in nominal.genericArguments {
+          try check(argument)
+        }
+        guard analyzer.extractDecider.isExtracted(nominal.nominalTypeDecl) else {
+          throw UnextractedTypeError(typeName: nominal.nominalTypeDecl.qualifiedName)
+        }
+      case .tuple(let elements):
+        for element in elements {
+          try check(element.type)
+        }
+      case .function(let function):
+        for parameter in function.parameters {
+          try check(parameter.type)
+        }
+        try check(function.resultType)
+      case .metatype(let type), .existential(let type), .opaque(let type), .inlineArray(_, let type):
+        try check(type)
+      case .composite(let types):
+        for type in types {
+          try check(type)
+        }
+      case .genericParameter:
+        break
+      }
+    }
+    for parameter in signature.parameters {
+      try check(parameter.type)
+    }
+    try check(signature.result.type)
   }
 
   /// Log a skipped declaration (as before) and report it to the configured

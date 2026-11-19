@@ -41,6 +41,14 @@ public enum SwiftKnownModule: String {
   }
 }
 
+extension SwiftKnownModule {
+  /// Whether `node` is part of the source SwiftExtract uses to describe this module, such as
+  /// the `Foundation.URL` it extracts when a module uses `URL`.
+  public func contains(_ node: some SyntaxProtocol) -> Bool {
+    node.root.id == sourceFile.id
+  }
+}
+
 private var swiftSymbolTable: SwiftModuleSymbolTable {
   var builder = SwiftParsedModuleSymbolTableBuilder(moduleName: "Swift", importedModules: [:])
   builder.handle(sourceFile: swiftSourceFile, sourceFilePath: "SwiftStdlib.swift") // FIXME: missing path here

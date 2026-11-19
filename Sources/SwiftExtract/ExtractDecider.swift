@@ -38,6 +38,35 @@ public protocol ExtractDecider {
     decl: DeclSyntax,
     in parent: ExtractedNominalType?
   ) -> Bool
+
+  /// Decide whether `decl`, a member of an extension whose extended type doesn't resolve, should be
+  /// extracted. An extension with members, none of which should be extracted, is ignored instead of
+  /// being reported as skipped.
+  ///
+  /// - Parameters:
+  ///   - decl: the member being considered
+  ///   - extensionDecl: the extension containing `decl`
+  func shouldExtract(
+    decl: DeclSyntax,
+    in extensionDecl: ExtensionDeclSyntax
+  ) -> Bool
+
+  /// Whether `type`, from this module or a dependency, is extracted. A declaration whose signature uses a
+  /// type that isn't extracted is skipped, since the generated code would refer to a type that doesn't exist.
+  func isExtracted(_ type: SwiftNominalTypeDeclaration) -> Bool
+}
+
+extension ExtractDecider {
+  public func shouldExtract(
+    decl: DeclSyntax,
+    in extensionDecl: ExtensionDeclSyntax
+  ) -> Bool {
+    true
+  }
+
+  public func isExtracted(_ type: SwiftNominalTypeDeclaration) -> Bool {
+    true
+  }
 }
 
 /// Minimal `ExtractDecider` that enforces only the configured access-level
