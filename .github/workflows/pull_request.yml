@@ -37,19 +37,6 @@ jobs:
       - uses: actions/checkout@v7
       - name: Prepare CI Environment
         uses: ./.github/actions/prepare_env
-      - name: Cache .build
-        uses: ./.github/actions/cache_swiftpm_build
-        with:
-          path: .build
-          tag: test
-          swift-version: ${{ matrix.swift_version }}
-          os-version: ${{ matrix.os_version }}
-          hash-files: |
-            Package.swift
-            Package.resolved
-            Sources/**/*.swift
-            Plugins/**/*.swift
-            Tests/**/*.swift
       - name: Swift Build
         run: swift build --build-tests --disable-sandbox --disable-experimental-prebuilts  # FIXME: until prebuilt swift-syntax isn't broken on 6.2 anymore: https://github.com/swiftlang/swift-java/issues/418
       - name: Swift Test
@@ -61,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift_version: ['6.3']
+        swift_version: ['6.4.2']  # swift 6.3.3 crashes on the macOS 27 SDK (`-target-arch-variant arm64e.x1`)
         os_version: ['macos']
     steps:
       - uses: actions/checkout@v7
