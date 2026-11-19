@@ -64,14 +64,5 @@ jobs:
           elif [[ -n "$JAVA_HOME_25_ARM64" ]]; then
             echo "JAVA_HOME_25=$JAVA_HOME_25_ARM64" >> $GITHUB_ENV
           fi
-      - name: Cache swift-java .build
-        uses: actions/cache@v6
-        continue-on-error: true
-        with:
-          path: .downstream/swift-java/.build
-          key: ${{ runner.os }}-swift-java-compat-${{ env.SWIFT_JAVA_REF }}-build-${{ hashFiles('Package.swift', 'Sources/**/*.swift') }}
-          restore-keys: |
-            ${{ runner.os }}-swift-java-compat-${{ env.SWIFT_JAVA_REF }}-build-
-            ${{ runner.os }}-swift-java-compat-
       - name: Build and test swift-java against this checkout
         run: ./.github/scripts/test_swift_java.sh
