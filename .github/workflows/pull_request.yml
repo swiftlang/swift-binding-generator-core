@@ -67,3 +67,8 @@ jobs:
         run: xcrun swift test --disable-xctest
       - name: Swift Test (XCTest)
         run: xcrun swift test --disable-experimental-swift-testing
+
+  test-swift-java:
+    name: swift-java compatibility
+    needs: [test-swift, test-swift-macos]
+    uses: ./.github/workflows/swift_java_compatibility.yml

@@ -4,8 +4,20 @@ permissions:
   contents: read
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
+  # Called from pull_request.yml once the in-repo tests have passed.
+  workflow_call:
+    inputs:
+      swift-java-repository:
+        description: 'swift-java repository to test against (owner/repo or full URL)'
+        type: string
+        required: false
+        default: 'swiftlang/swift-java'
+      swift-java-ref:
+        description: 'swift-java branch, tag, or SHA to test against'
+        type: string
+        required: false
+        default: 'main'
+  # Manual runs against an arbitrary swift-java repository and ref.
   workflow_dispatch:
     inputs:
       swift-java-repository:
@@ -17,9 +29,9 @@ on:
         required: true
         default: 'main'
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# No concurrency group here: when called from pull_request.yml, `github.workflow`
+# is the caller's name, so our group would equal the caller's and cancel the run.
+# The caller's concurrency group already covers this job.
 
 jobs:
   test-swift-java:
