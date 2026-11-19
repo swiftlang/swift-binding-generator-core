@@ -941,17 +941,19 @@ struct AnalysisResultSuite {
 
   @Test func actorPropertyIsolation() throws {
     let result = try analyze(
-      sources: [(
-        "/fake/Source.swift",
-        """
-        public actor Record {
-          public nonisolated let identifier: Int64
-          public nonisolated var label: Int64 { 7 }
-          public nonisolated(unsafe) var unsafeValue: Int64
-          public var isolatedValue: Int64
-        }
-        """
-      )],
+      sources: [
+        (
+          "/fake/Source.swift",
+          """
+          public actor Record {
+            public nonisolated let identifier: Int64
+            public nonisolated var label: Int64 { 7 }
+            public nonisolated(unsafe) var unsafeValue: Int64
+            public var isolatedValue: Int64
+          }
+          """
+        )
+      ],
       moduleName: "Aquarium"
     )
     let record = try #require(result.extractedTypes["Record"])
