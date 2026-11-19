@@ -20,7 +20,7 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/swiftlang/swift-syntax", from: "603.0.0"),
+    .package(url: "https://github.com/swiftlang/swift-syntax", "603.0.0"..<"605.0.0"),
     .package(url: "https://github.com/swiftlang/swift-subprocess.git", "0.4.0"..<"0.5.0", traits: ["SubprocessFoundation"]),
   ],
   targets: [
