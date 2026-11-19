@@ -35,6 +35,13 @@ jobs:
       SWIFT_JAVA_REF: ${{ inputs.swift-java-ref || 'main' }}
     steps:
       - uses: actions/checkout@v7
+      # Before the cache step: it restores .build into this folder, which `git clone` would refuse
+      - name: Check out swift-java
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.SWIFT_JAVA_REPOSITORY }}
+          ref: ${{ env.SWIFT_JAVA_REF }}
+          path: .downstream/swift-java
       - name: Check Swift version
         run: swift -version
       # swift-java needs a JDK in order to build (JNI headers, Java tools).
