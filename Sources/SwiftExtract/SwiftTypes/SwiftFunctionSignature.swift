@@ -400,6 +400,8 @@ extension SwiftFunctionSignature {
       self.parameters = []
       self.result = .init(convention: .direct, type: valueType)
     }
+
+    self.isNonisolated = varNode.modifiers.contains { $0.name.tokenKind == .keyword(.nonisolated) }
     self.genericParameters = []
     self.genericRequirements = []
   }

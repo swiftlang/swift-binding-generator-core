@@ -938,4 +938,32 @@ struct AnalysisResultSuite {
     #expect(distributedMethod.isImplicitlyAsync)
     #expect(distributedMethod.isThrowing)
   }
+
+  @Test func actorPropertyIsolation() throws {
+    let result = try analyze(
+      sources: [
+        (
+          "/fake/Source.swift",
+          """
+          public actor Record {
+            public nonisolated let identifier: Int64
+            public nonisolated var label: Int64 { 7 }
+            public nonisolated(unsafe) var unsafeValue: Int64
+            public var isolatedValue: Int64
+          }
+          """
+        )
+      ],
+      moduleName: "Aquarium"
+    )
+    let record = try #require(result.extractedTypes["Record"])
+
+    let nonisolated = record.variables.filter { ["identifier", "label", "unsafeValue"].contains($0.name) }
+    #expect(nonisolated.count == 4)
+    #expect(nonisolated.allSatisfy { $0.functionSignature.isNonisolated && !$0.isImplicitlyAsync })
+
+    let isolated = record.variables.filter { $0.name == "isolatedValue" }
+    #expect(isolated.count == 2)
+    #expect(isolated.allSatisfy { !$0.functionSignature.isNonisolated && $0.isImplicitlyAsync })
+  }
 }
