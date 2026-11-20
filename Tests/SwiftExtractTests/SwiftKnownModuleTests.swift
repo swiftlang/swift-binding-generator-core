@@ -60,4 +60,42 @@ struct SwiftKnownModuleSuite {
     let doubleDecl = try #require(known.double.asNominalTypeDeclaration)
     #expect(doubleDecl.knownTypeKind == .double)
   }
+
+  // ==== -----------------------------------------------------------------------
+  // MARK: Foundation catalog
+
+  @Test(arguments: [
+    "Foundation.Locale", "Foundation.TimeZone", "Foundation.CGFloat",
+    "FoundationEssentials.Locale", "FoundationEssentials.TimeZone",
+  ])
+  func foundationModulesContain(_ qualifiedName: String) throws {
+    let kind = try #require(SwiftKnownTypeDeclKind(rawValue: qualifiedName))
+    let module = try #require(SwiftKnownModule(rawValue: kind.moduleAndName.module))
+    let decl = try #require(module.symbolTable.lookupTopLevelNominalType(kind.moduleAndName.name))
+    #expect(decl.knownTypeKind == kind)
+  }
+
+  @Test func cgFloatIsNotInFoundationEssentials() {
+    #expect(SwiftKnownModule.foundationEssentials.symbolTable.lookupTopLevelNominalType("CGFloat") == nil)
+  }
+
+  @Test func declarationsUsingLocaleTimeZoneAndCGFloatAreExtracted() throws {
+    let sink = CollectingDiagnosticsSink()
+    let result = try analyze(
+      sources: [
+        (
+          "/fake/Source.swift",
+          """
+          import Foundation
+          public func format(locale: Locale, timeZone: TimeZone, size: CGFloat) {}
+          """
+        )
+      ],
+      moduleName: "TestModule",
+      diagnosticsSink: sink
+    )
+
+    #expect(result.extractedGlobalFuncs.map(\.name) == ["format"])
+    #expect(sink.diagnostics.isEmpty)
+  }
 }
