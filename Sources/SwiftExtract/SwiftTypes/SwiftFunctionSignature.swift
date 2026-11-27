@@ -352,6 +352,106 @@ extension SwiftFunctionSignature {
     return (parameters, effectSpecifiers, thrownTypedError)
   }
 
+  /// The type of an unannotated variable, in the cases where its initial value decides it without
+  /// type checking:
+  /// - a literal: `42`, `-1`, `1.5`, `"text"`, `true`;
+  /// - an enum case: `Style.linear`, `Result.failure(error)`;
+  /// - an initializer call `T(...)` (or `A.B(...)`, `Self(...)`), when `T` is declared in the analyzed
+  ///   sources and the initializer it calls can't fail: a matching `init` that isn't `init?`, `init!`,
+  ///   `throws` or `async`, or a struct's implicit initializer.
+  ///
+  /// Anything else, such as `makeValue()` or `URL(string:)`, still needs a type annotation.
+  static func inferredType(
+    of expr: ExprSyntax,
+    enclosingType: SwiftType?,
+    lookupContext: SwiftTypeLookupContext
+  ) -> SwiftType? {
+    let knownTypes = SwiftKnownTypes(symbolTable: lookupContext.symbolTable)
+    if expr.is(IntegerLiteralExprSyntax.self) {
+      return knownTypes.int
+    }
+    if let prefix = expr.as(PrefixOperatorExprSyntax.self), prefix.operator.text == "-",
+      prefix.expression.is(IntegerLiteralExprSyntax.self)
+    {
+      return knownTypes.int
+    }
+    if expr.is(FloatLiteralExprSyntax.self) {
+      return knownTypes.double
+    }
+    if expr.is(StringLiteralExprSyntax.self) {
+      return knownTypes.string
+    }
+    if expr.is(BooleanLiteralExprSyntax.self) {
+      return knownTypes.bool
+    }
+
+    let call = expr.as(FunctionCallExprSyntax.self)
+    if let call, call.trailingClosure != nil || !call.additionalTrailingClosures.isEmpty {
+      return nil
+    }
+    let callee = call?.calledExpression ?? expr
+
+    // `T(...)`
+    if let call, let type = namedType(callee, enclosingType: enclosingType, lookupContext: lookupContext),
+      case .nominal(let nominal) = type,
+      nominal.nominalTypeDecl.hasInitializerThatCannotFail(labels: call.arguments.map { $0.label?.text ?? "_" })
+    {
+      return type
+    }
+    // `T.someCase` or `T.someCase(...)`
+    if let member = callee.as(MemberAccessExprSyntax.self), let base = member.base,
+      let type = namedType(base, enclosingType: enclosingType, lookupContext: lookupContext),
+      case .nominal(let nominal) = type,
+      nominal.nominalTypeDecl.hasEnumCase(named: member.declName.baseName.text)
+    {
+      return type
+    }
+    return nil
+  }
+
+  /// The nominal type an expression names: `Foo`, `A.B` or `Self`, looked up in the enclosing type first.
+  private static func namedType(
+    _ expr: ExprSyntax,
+    enclosingType: SwiftType?,
+    lookupContext: SwiftTypeLookupContext
+  ) -> SwiftType? {
+    if case .nominal(let enclosing) = enclosingType, let reference = expr.as(DeclReferenceExprSyntax.self),
+      reference.argumentNames == nil
+    {
+      if reference.baseName.tokenKind == .keyword(.Self) {
+        return enclosing.nominalTypeDecl.kind == .protocol ? nil : enclosingType
+      }
+      var scope: SwiftNominalTypeDeclaration? = enclosing.nominalTypeDecl
+      while let parent = scope {
+        if let nested = lookupContext.symbolTable.lookupNestedType(reference.baseName.text, parent: parent) {
+          return .nominal(SwiftNominalType(nominalTypeDecl: nested))
+        }
+        scope = parent.parent
+      }
+    }
+    guard let typeSyntax = typeSyntax(naming: expr),
+      let type = try? SwiftType(typeSyntax, lookupContext: lookupContext),
+      case .nominal(let nominal) = type, !nominal.nominalTypeDecl.isUnresolvedTypePlaceholder
+    else {
+      return nil
+    }
+    return type
+  }
+
+  /// `Foo` or `A.B` written as an expression, as a type.
+  private static func typeSyntax(naming expr: ExprSyntax) -> TypeSyntax? {
+    if let reference = expr.as(DeclReferenceExprSyntax.self), reference.argumentNames == nil {
+      return TypeSyntax(IdentifierTypeSyntax(name: reference.baseName.trimmed))
+    }
+    if let member = expr.as(MemberAccessExprSyntax.self), let base = member.base,
+      member.declName.argumentNames == nil,
+      let baseType = typeSyntax(naming: base)
+    {
+      return TypeSyntax(MemberTypeSyntax(baseType: baseType, name: member.declName.baseName.trimmed))
+    }
+    return nil
+  }
+
   public init(
     _ varNode: VariableDeclSyntax,
     isSet: Bool,
@@ -369,10 +469,16 @@ extension SwiftFunctionSignature {
       throw SwiftFunctionTranslationError.multipleBindings(varNode)
     }
 
-    guard let varTypeNode = binding.typeAnnotation?.type else {
+    let valueType: SwiftType
+    if let varTypeNode = binding.typeAnnotation?.type {
+      valueType = try SwiftType(varTypeNode, lookupContext: lookupContext)
+    } else if let initializer = binding.initializer?.value,
+      let inferred = Self.inferredType(of: initializer, enclosingType: enclosingType, lookupContext: lookupContext)
+    {
+      valueType = inferred
+    } else {
       throw SwiftFunctionTranslationError.missingTypeAnnotation(varNode)
     }
-    let valueType = try SwiftType(varTypeNode, lookupContext: lookupContext)
 
     var accessorEffects: AccessorEffects? = nil
     switch binding.accessorBlock?.accessors {
@@ -606,4 +712,47 @@ public enum SwiftFunctionTranslationError: Error {
   case genericParameterSpecifier(GenericParameterSyntax)
   case expressionInGenericRequirement(GenericRequirementSyntax)
   case layoutRequirement(GenericRequirementSyntax)
+}
+
+extension SwiftNominalTypeDeclaration {
+  /// Whether `name` is a case of this enum.
+  fileprivate func hasEnumCase(named name: String) -> Bool {
+    kind == .enum
+      && syntax.memberBlock.members.contains { member in
+        member.decl.as(EnumCaseDeclSyntax.self)?.elements.contains { $0.name.text == name } ?? false
+      }
+  }
+
+  /// Whether a call with these argument labels creates a value of this type for sure: every initializer
+  /// it may call is declared in the type's body and is neither failable, `throws` nor `async`, or the
+  /// type is a struct without declared initializers, so the call is its implicit initializer.
+  ///
+  /// Known standard library and Foundation types are left out: their initializers aren't declared
+  /// here, and many of them can fail (`Int("1")`, `URL(string:)`).
+  fileprivate func hasInitializerThatCannotFail(labels: [String]) -> Bool {
+    guard knownTypeKind == nil, !isUnresolvedTypePlaceholder else {
+      return false
+    }
+    let initializers = syntax.memberBlock.members.compactMap { $0.decl.as(InitializerDeclSyntax.self) }
+    guard !initializers.isEmpty else {
+      return kind == .struct
+    }
+    let candidates = initializers.filter { callableLabelLists(of: $0.signature.parameterClause.parameters).contains(labels) }
+    return !candidates.isEmpty
+      && candidates.allSatisfy { initializer in
+        initializer.optionalMark == nil && initializer.signature.effectSpecifiers?.throwsClause == nil
+          && initializer.signature.effectSpecifiers?.asyncSpecifier == nil
+      }
+  }
+}
+
+/// The argument label lists a call can use: a parameter with a default value may be left out.
+private func callableLabelLists(of parameters: FunctionParameterListSyntax) -> Set<[String]> {
+  var lists: Set<[String]> = [[]]
+  for parameter in parameters {
+    let label = parameter.firstName.tokenKind == .wildcard ? "_" : parameter.firstName.text
+    let withParameter = Set(lists.map { $0 + [label] })
+    lists = parameter.defaultValue == nil ? withParameter : lists.union(withParameter)
+  }
+  return lists
 }
